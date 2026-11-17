@@ -1,1 +1,2 @@
-pytest>=8.0,<9.0
+# Runtime dependencies: none (app.py and cli.py use only the standard library).
+# Test and lint tools live in requirements-dev.txt.
