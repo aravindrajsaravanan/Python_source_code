@@ -1,0 +1,59 @@
+name: python_ci
+
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: code checkout
+      uses: actions/checkout@v5
+
+    - name: installing python
+      uses: actions/setup-python@v7.1.0
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: requirements*.txt
+
+    - name: installing dependencies
+      run: python -m pip install -r requirements-dev.txt
+
+    - name: Run tests
+      run: python -m pytest
+
+    - name: Run lint check
+      run: python -m ruff check .
+
+    - name: Check formatting
+      run: python -m ruff format --check .
+
+  build-image:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout code
+      uses: actions/checkout@v5
+
+    - name: building docker image
+      run: docker build -t python-image:${{github.sha}} .
+
+    - name: run container
+      run: docker run -d --name python-app -p 8000:8000 python-image:${{github.sha}}
+
+    - name: test health endpoint
+      run: curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-connrefused http://localhost:8000/health
+
+    - name: save docker image as file
+      run: docker save python-image:${{github.sha}} -o python-image.tar
+
+    - name: upload image as artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-image
+        path: python-image.tar
+        retention-days: 7
+
+    - name: show container logs
+      if: failure()
+      run: docker logs python-app
