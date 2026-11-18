@@ -42,7 +42,7 @@ jobs:
       run: docker run -d --name python-app -p 8000:8000 python-image:${{github.sha}}
 
     - name: test health endpoint
-      run: curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-connrefused http://localhost:8000/health
+      run: curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors http://localhost:8000/health
 
     - name: save docker image as file
       run: docker save python-image:${{github.sha}} -o python-image.tar
